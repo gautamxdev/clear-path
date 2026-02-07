@@ -46,33 +46,20 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="p-6 space-y-6 animate-fade-in">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-4 gap-4">
-            <SummaryCard label="Pending" count={pendingCount} accent="status-pending" />
-            <SummaryCard label="In Progress" count={inProgressCount} accent="status-in-progress" />
-            <SummaryCard label="Overdue" count={overdueCount} accent="status-overdue" />
-            <SummaryCard label="Filed" count={filedCount} accent="status-filed" />
+        <div className="p-6 space-y-5">
+          {/* Subtle inline summary */}
+          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <span>Pending <strong className="text-status-pending ml-1">{pendingCount}</strong></span>
+            <span>In Progress <strong className="text-status-in-progress ml-1">{inProgressCount}</strong></span>
+            <span>Overdue <strong className="text-status-overdue ml-1">{overdueCount}</strong></span>
+            <span>Filed <strong className="text-status-filed ml-1">{filedCount}</strong></span>
+            <span className="ml-auto text-muted-foreground/70">{filteredTasks.length} tasks for this client</span>
           </div>
 
           {/* Task Table */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Compliance Tasks · {filteredTasks.length} items
-            </h3>
-            <ClientTaskTable tasks={filteredTasks} />
-          </div>
+          <ClientTaskTable tasks={filteredTasks} />
         </div>
       </main>
-    </div>
-  );
-}
-
-function SummaryCard({ label, count, accent }: { label: string; count: number; accent: string }) {
-  return (
-    <div className="border rounded-lg bg-card p-4">
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className={`text-2xl font-semibold text-${accent}`}>{count}</p>
     </div>
   );
 }

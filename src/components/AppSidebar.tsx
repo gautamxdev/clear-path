@@ -70,7 +70,7 @@ export function AppSidebar({ selectedClientId, onSelectClient }: AppSidebarProps
               key={client.id}
               onClick={() => {
                 onSelectClient(client.id);
-                navigate("/");
+                navigate("/dashboard");
               }}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
