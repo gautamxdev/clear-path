@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { mockTasks, mockFinancialYears, mockUsers, getClientName, getUserName, getFYLabel } from "@/lib/mock-data";
+import { mockTasks, mockFinancialYears, mockUsers, getClientName, getUserName, getLastActivity } from "@/lib/mock-data";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { TaskStatus } from "@/lib/types";
 
 const ALL = "__all__";
@@ -38,9 +39,9 @@ export default function GlobalFilters() {
         </div>
       </header>
 
-      <div className="p-6 max-w-5xl mx-auto space-y-6 animate-fade-in">
+      <div className="p-6 max-w-6xl mx-auto space-y-5">
         {/* Filter Controls */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={fyFilter} onValueChange={setFyFilter}>
             <SelectTrigger className="w-[160px] h-9 text-sm bg-card">
               <SelectValue />
@@ -75,39 +76,61 @@ export default function GlobalFilters() {
               ))}
             </SelectContent>
           </Select>
+
+          <span className="text-xs text-muted-foreground ml-auto">{filtered.length} tasks found</span>
         </div>
 
-        {/* Results */}
-        <p className="text-sm text-muted-foreground">{filtered.length} tasks found</p>
-
+        {/* Results Table */}
         <div className="border rounded-lg bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Task</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Assigned To</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Due Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Task</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Client</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Assigned To</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Due Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Last Activity</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((task) => (
-                <tr
-                  key={task.id}
-                  onClick={() => navigate(`/task/${task.id}`)}
-                  className="border-b last:border-b-0 hover:bg-secondary/30 cursor-pointer transition-colors"
-                >
-                  <td className="px-4 py-3 font-medium">{task.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{getClientName(task.clientId)}</td>
-                  <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
-                  <td className="px-4 py-3 text-muted-foreground">{getUserName(task.assignedTo)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{format(new Date(task.dueDate), "dd MMM yyyy")}</td>
-                </tr>
-              ))}
+              {filtered.map((task) => {
+                const lastActivity = getLastActivity(task.id);
+                const isOverdue = task.status === "Overdue";
+                return (
+                  <tr
+                    key={task.id}
+                    onClick={() => navigate(`/task/${task.id}`)}
+                    className={cn(
+                      "border-b last:border-b-0 cursor-pointer transition-colors",
+                      isOverdue ? "bg-status-overdue-bg/50 hover:bg-status-overdue-bg/80" : "hover:bg-secondary/30"
+                    )}
+                  >
+                    <td className={cn("px-4 py-2.5 font-medium", isOverdue && "text-status-overdue")}>{task.name}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{getClientName(task.clientId)}</td>
+                    <td className="px-4 py-2.5"><StatusBadge status={task.status} /></td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{getUserName(task.assignedTo)}</td>
+                    <td className={cn("px-4 py-2.5 text-muted-foreground", isOverdue && "text-status-overdue font-medium")}>
+                      {format(new Date(task.dueDate), "dd MMM yyyy")}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {lastActivity ? (
+                        <span className="text-xs">
+                          {lastActivity.userName} · {lastActivity.action}
+                          <span className="text-muted-foreground/60 ml-1">
+                            {formatDistanceToNow(new Date(lastActivity.timestamp), { addSuffix: true })}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/50">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     No tasks match your filters.
                   </td>
                 </tr>

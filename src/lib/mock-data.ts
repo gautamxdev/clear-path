@@ -110,3 +110,13 @@ export function getClientName(clientId: string): string {
 export function getFYLabel(fyId: string): string {
   return mockFinancialYears.find(fy => fy.id === fyId)?.label ?? "Unknown";
 }
+
+// Helper to get last activity for a task
+export function getLastActivity(taskId: string): { userName: string; action: string; timestamp: string } | null {
+  const entries = mockActivityLog
+    .filter((e) => e.taskId === taskId)
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  if (entries.length === 0) return null;
+  const entry = entries[0];
+  return { userName: getUserName(entry.userId), action: entry.action, timestamp: entry.timestamp };
+}
