@@ -1,6 +1,8 @@
 export type UserRole = "admin" | "staff";
 
-export type TaskStatus = "Filed" | "Pending" | "In Progress" | "Overdue";
+export type SectionType = "GST" | "TDS" | "Income Tax" | "Audit" | "Notices" | "Other";
+
+export const SECTIONS: SectionType[] = ["GST", "TDS", "Income Tax", "Audit", "Notices", "Other"];
 
 export interface User {
   id: string;
@@ -25,34 +27,39 @@ export interface Client {
 
 export interface FinancialYear {
   id: string;
-  label: string; // e.g. "FY 2024-25"
+  label: string;
   startDate: string;
   endDate: string;
 }
 
-export interface ComplianceTask {
+export interface Document {
   id: string;
   clientId: string;
   financialYearId: string;
+  section: SectionType;
   name: string;
-  status: TaskStatus;
-  assignedTo: string; // userId
-  dueDate: string;
   description?: string;
+  preparedBy: string; // userId
+  reviewedBy?: string; // userId
+  datePrepared: string;
+  lastModified: string;
+  version: number;
+  size: string;
 }
 
-export interface Document {
+export interface DocumentVersion {
   id: string;
-  taskId: string;
-  name: string;
+  documentId: string;
+  version: number;
   uploadedBy: string; // userId
   uploadedAt: string;
   size: string;
+  notes?: string;
 }
 
 export interface ActivityLogEntry {
   id: string;
-  taskId: string;
+  documentId: string;
   userId: string;
   action: string;
   timestamp: string;

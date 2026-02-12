@@ -7,8 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import FirmSetup from "./pages/FirmSetup";
 import Dashboard from "./pages/Dashboard";
-import TaskDetail from "./pages/TaskDetail";
-import GlobalFilters from "./pages/GlobalFilters";
+import DocumentDetail from "./pages/DocumentDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,8 +23,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<FirmSetup />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/task/:taskId" element={<TaskDetail />} />
-          <Route path="/filters" element={<GlobalFilters />} />
+          <Route path="/document/:documentId" element={<DocumentDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

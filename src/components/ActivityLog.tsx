@@ -3,12 +3,12 @@ import { format } from "date-fns";
 import { Clock } from "lucide-react";
 
 interface ActivityLogProps {
-  taskId: string;
+  documentId: string;
 }
 
-export function ActivityLog({ taskId }: ActivityLogProps) {
+export function ActivityLog({ documentId }: ActivityLogProps) {
   const entries = mockActivityLog
-    .filter((e) => e.taskId === taskId)
+    .filter((e) => e.documentId === documentId)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   if (entries.length === 0) {
@@ -19,7 +19,6 @@ export function ActivityLog({ taskId }: ActivityLogProps) {
     <div className="space-y-0">
       {entries.map((entry, i) => (
         <div key={entry.id} className="flex gap-3 py-3 relative">
-          {/* Timeline line */}
           {i < entries.length - 1 && (
             <div className="absolute left-[11px] top-[30px] bottom-0 w-px bg-border" />
           )}
