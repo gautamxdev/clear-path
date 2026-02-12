@@ -1,4 +1,4 @@
-import type { User, Firm, Client, FinancialYear, ComplianceTask, Document, ActivityLogEntry } from "./types";
+import type { User, Firm, Client, FinancialYear, Document, DocumentVersion, ActivityLogEntry, SectionType } from "./types";
 
 export const mockFirm: Firm = {
   id: "firm-1",
@@ -29,94 +29,117 @@ export const mockFinancialYears: FinancialYear[] = [
   { id: "fy-2022", label: "FY 2022–23", startDate: "2022-04-01", endDate: "2023-03-31" },
 ];
 
-export const mockTasks: ComplianceTask[] = [
-  // Tata Steel
-  { id: "t1", clientId: "c1", financialYearId: "fy-2024", name: "GST Return – GSTR-3B (Monthly)", status: "Filed", assignedTo: "u2", dueDate: "2025-01-20" },
-  { id: "t2", clientId: "c1", financialYearId: "fy-2024", name: "TDS Return – 26Q (Q3)", status: "In Progress", assignedTo: "u3", dueDate: "2025-01-31" },
-  { id: "t3", clientId: "c1", financialYearId: "fy-2024", name: "Income Tax Return – ITR-6", status: "Pending", assignedTo: "u2", dueDate: "2025-03-31" },
-  { id: "t4", clientId: "c1", financialYearId: "fy-2024", name: "GST Annual Return – GSTR-9", status: "Pending", assignedTo: "u4", dueDate: "2025-03-31" },
-  { id: "t5", clientId: "c1", financialYearId: "fy-2024", name: "ROC Annual Filing – AOC-4", status: "Overdue", assignedTo: "u3", dueDate: "2024-11-30" },
+export const mockDocuments: Document[] = [
+  // Tata Steel – GST
+  { id: "d1", clientId: "c1", financialYearId: "fy-2024", section: "GST", name: "GSTR-3B Dec 2024", description: "Monthly return for December", preparedBy: "u2", reviewedBy: "u1", datePrepared: "2025-01-15", lastModified: "2025-01-15T10:30:00", version: 2, size: "245 KB" },
+  { id: "d2", clientId: "c1", financialYearId: "fy-2024", section: "GST", name: "GSTR-1 Dec 2024", description: "Outward supplies for December", preparedBy: "u2", datePrepared: "2025-01-10", lastModified: "2025-01-12T14:20:00", version: 1, size: "180 KB" },
+  { id: "d3", clientId: "c1", financialYearId: "fy-2024", section: "GST", name: "Sales Register Q3", description: "Quarterly sales register", preparedBy: "u3", datePrepared: "2025-01-08", lastModified: "2025-01-09T09:00:00", version: 1, size: "1.2 MB" },
+  { id: "d4", clientId: "c1", financialYearId: "fy-2024", section: "GST", name: "GSTR-9 Annual Return Draft", preparedBy: "u4", datePrepared: "2025-01-20", lastModified: "2025-01-20T16:00:00", version: 1, size: "890 KB" },
 
-  // Ramesh Kumar
-  { id: "t6", clientId: "c2", financialYearId: "fy-2024", name: "Income Tax Return – ITR-1", status: "Filed", assignedTo: "u3", dueDate: "2024-07-31" },
-  { id: "t7", clientId: "c2", financialYearId: "fy-2024", name: "TDS Return – 26Q (Q2)", status: "Filed", assignedTo: "u3", dueDate: "2024-10-31" },
-  { id: "t8", clientId: "c2", financialYearId: "fy-2024", name: "Advance Tax – Q4", status: "Pending", assignedTo: "u4", dueDate: "2025-03-15" },
+  // Tata Steel – TDS
+  { id: "d5", clientId: "c1", financialYearId: "fy-2024", section: "TDS", name: "Form 26Q – Q3", description: "TDS return for Q3", preparedBy: "u3", reviewedBy: "u1", datePrepared: "2025-01-18", lastModified: "2025-01-19T09:15:00", version: 3, size: "340 KB" },
+  { id: "d6", clientId: "c1", financialYearId: "fy-2024", section: "TDS", name: "TDS Challan Q3", preparedBy: "u3", datePrepared: "2025-01-17", lastModified: "2025-01-17T16:45:00", version: 1, size: "120 KB" },
+  { id: "d7", clientId: "c1", financialYearId: "fy-2024", section: "TDS", name: "Form 24Q – Q3", description: "Salary TDS return", preparedBy: "u2", datePrepared: "2025-01-22", lastModified: "2025-01-22T11:00:00", version: 1, size: "290 KB" },
 
-  // Sunrise Traders
-  { id: "t9", clientId: "c3", financialYearId: "fy-2024", name: "GST Return – GSTR-3B (Monthly)", status: "In Progress", assignedTo: "u2", dueDate: "2025-01-20" },
-  { id: "t10", clientId: "c3", financialYearId: "fy-2024", name: "LLP Form 11", status: "Pending", assignedTo: "u4", dueDate: "2025-05-30" },
-  { id: "t11", clientId: "c3", financialYearId: "fy-2024", name: "Income Tax Return – ITR-5", status: "Pending", assignedTo: "u2", dueDate: "2025-03-31" },
+  // Tata Steel – Income Tax
+  { id: "d8", clientId: "c1", financialYearId: "fy-2024", section: "Income Tax", name: "ITR-6 Computation", description: "Draft computation of income", preparedBy: "u2", datePrepared: "2025-02-01", lastModified: "2025-02-01T10:00:00", version: 1, size: "560 KB" },
 
-  // Mehra & Sons
-  { id: "t12", clientId: "c4", financialYearId: "fy-2024", name: "Partnership Deed Amendment", status: "Filed", assignedTo: "u4", dueDate: "2024-09-15" },
-  { id: "t13", clientId: "c4", financialYearId: "fy-2024", name: "GST Return – GSTR-1 (Monthly)", status: "In Progress", assignedTo: "u3", dueDate: "2025-01-11" },
+  // Tata Steel – Audit
+  { id: "d9", clientId: "c1", financialYearId: "fy-2024", section: "Audit", name: "Audit Working Papers", description: "Statutory audit working papers", preparedBy: "u3", reviewedBy: "u1", datePrepared: "2024-11-15", lastModified: "2024-12-20T13:00:00", version: 4, size: "3.5 MB" },
+  { id: "d10", clientId: "c1", financialYearId: "fy-2024", section: "Audit", name: "Bank Reconciliation", preparedBy: "u4", datePrepared: "2024-11-10", lastModified: "2024-11-10T15:30:00", version: 1, size: "780 KB" },
 
-  // Priya Textiles
-  { id: "t14", clientId: "c5", financialYearId: "fy-2024", name: "TDS Return – 24Q (Q3)", status: "Pending", assignedTo: "u2", dueDate: "2025-01-31" },
-  { id: "t15", clientId: "c5", financialYearId: "fy-2024", name: "GST Return – GSTR-3B (Monthly)", status: "Filed", assignedTo: "u4", dueDate: "2025-01-20" },
+  // Tata Steel – Notices
+  { id: "d11", clientId: "c1", financialYearId: "fy-2024", section: "Notices", name: "GST Notice – ASMT-10", description: "Scrutiny notice reply", preparedBy: "u2", reviewedBy: "u1", datePrepared: "2024-10-05", lastModified: "2024-10-08T14:00:00", version: 2, size: "450 KB" },
 
-  // Previous FY tasks
-  { id: "t16", clientId: "c1", financialYearId: "fy-2023", name: "Income Tax Return – ITR-6", status: "Filed", assignedTo: "u2", dueDate: "2023-10-31" },
-  { id: "t17", clientId: "c1", financialYearId: "fy-2023", name: "GST Annual Return – GSTR-9", status: "Filed", assignedTo: "u3", dueDate: "2023-12-31" },
-  { id: "t18", clientId: "c2", financialYearId: "fy-2023", name: "Income Tax Return – ITR-1", status: "Filed", assignedTo: "u3", dueDate: "2023-07-31" },
+  // Ramesh Kumar – Income Tax
+  { id: "d12", clientId: "c2", financialYearId: "fy-2024", section: "Income Tax", name: "ITR-1 AY 2025-26", description: "Individual return", preparedBy: "u3", reviewedBy: "u1", datePrepared: "2024-07-28", lastModified: "2024-07-28T11:00:00", version: 2, size: "890 KB" },
+  { id: "d13", clientId: "c2", financialYearId: "fy-2024", section: "Income Tax", name: "Form 16", description: "Employer TDS certificate", preparedBy: "u3", datePrepared: "2024-07-25", lastModified: "2024-07-25T10:00:00", version: 1, size: "456 KB" },
+  { id: "d14", clientId: "c2", financialYearId: "fy-2024", section: "Income Tax", name: "Advance Tax Computation Q4", preparedBy: "u4", datePrepared: "2025-03-01", lastModified: "2025-03-01T09:30:00", version: 1, size: "210 KB" },
+
+  // Ramesh Kumar – TDS
+  { id: "d15", clientId: "c2", financialYearId: "fy-2024", section: "TDS", name: "Form 26Q – Q2", preparedBy: "u3", datePrepared: "2024-10-25", lastModified: "2024-10-25T14:00:00", version: 1, size: "280 KB" },
+
+  // Sunrise Traders – GST
+  { id: "d16", clientId: "c3", financialYearId: "fy-2024", section: "GST", name: "GSTR-3B Jan 2025 Draft", description: "Draft monthly return", preparedBy: "u2", datePrepared: "2025-01-19", lastModified: "2025-01-19T08:30:00", version: 1, size: "210 KB" },
+  { id: "d17", clientId: "c3", financialYearId: "fy-2024", section: "GST", name: "Purchase Register Q3", preparedBy: "u4", datePrepared: "2025-01-05", lastModified: "2025-01-05T11:00:00", version: 1, size: "950 KB" },
+
+  // Sunrise Traders – Income Tax
+  { id: "d18", clientId: "c3", financialYearId: "fy-2024", section: "Income Tax", name: "ITR-5 Computation Draft", preparedBy: "u2", datePrepared: "2025-02-10", lastModified: "2025-02-10T10:00:00", version: 1, size: "670 KB" },
+
+  // Mehra & Sons – Other
+  { id: "d19", clientId: "c4", financialYearId: "fy-2024", section: "Other", name: "Partnership Deed Amendment", description: "Amended partnership deed", preparedBy: "u4", reviewedBy: "u1", datePrepared: "2024-09-10", lastModified: "2024-09-12T14:00:00", version: 2, size: "2.1 MB" },
+
+  // Mehra & Sons – GST
+  { id: "d20", clientId: "c4", financialYearId: "fy-2024", section: "GST", name: "GSTR-1 Dec 2024", preparedBy: "u3", datePrepared: "2025-01-08", lastModified: "2025-01-08T10:00:00", version: 1, size: "195 KB" },
+
+  // Previous FY
+  { id: "d21", clientId: "c1", financialYearId: "fy-2023", section: "Income Tax", name: "ITR-6 AY 2024-25", preparedBy: "u2", reviewedBy: "u1", datePrepared: "2023-10-20", lastModified: "2023-10-31T09:00:00", version: 3, size: "1.1 MB" },
+  { id: "d22", clientId: "c1", financialYearId: "fy-2023", section: "GST", name: "GSTR-9 Annual Return", preparedBy: "u3", reviewedBy: "u1", datePrepared: "2023-12-15", lastModified: "2023-12-31T16:00:00", version: 2, size: "980 KB" },
 ];
 
-export const mockDocuments: Document[] = [
-  { id: "d1", taskId: "t1", name: "GSTR-3B_Dec2024.pdf", uploadedBy: "u2", uploadedAt: "2025-01-15T10:30:00", size: "245 KB" },
-  { id: "d2", taskId: "t1", name: "Sales_Register_Dec.xlsx", uploadedBy: "u2", uploadedAt: "2025-01-14T14:20:00", size: "1.2 MB" },
-  { id: "d3", taskId: "t2", name: "Form_26Q_Draft.pdf", uploadedBy: "u3", uploadedAt: "2025-01-18T09:15:00", size: "340 KB" },
-  { id: "d4", taskId: "t2", name: "TDS_Challan_Q3.pdf", uploadedBy: "u3", uploadedAt: "2025-01-17T16:45:00", size: "120 KB" },
-  { id: "d5", taskId: "t6", name: "ITR-1_AY2425_Ramesh.pdf", uploadedBy: "u3", uploadedAt: "2024-07-28T11:00:00", size: "890 KB" },
-  { id: "d6", taskId: "t6", name: "Form_16_Ramesh.pdf", uploadedBy: "u3", uploadedAt: "2024-07-25T10:00:00", size: "456 KB" },
-  { id: "d7", taskId: "t9", name: "GSTR-3B_Draft_Jan.pdf", uploadedBy: "u2", uploadedAt: "2025-01-19T08:30:00", size: "210 KB" },
-  { id: "d8", taskId: "t5", name: "AOC-4_Draft.pdf", uploadedBy: "u3", uploadedAt: "2024-11-25T13:00:00", size: "1.5 MB" },
-  { id: "d9", taskId: "t12", name: "Partnership_Deed_Amended.pdf", uploadedBy: "u4", uploadedAt: "2024-09-10T15:30:00", size: "2.1 MB" },
+export const mockDocumentVersions: DocumentVersion[] = [
+  { id: "v1", documentId: "d1", version: 1, uploadedBy: "u2", uploadedAt: "2025-01-14T14:20:00", size: "230 KB", notes: "Initial draft" },
+  { id: "v2", documentId: "d1", version: 2, uploadedBy: "u2", uploadedAt: "2025-01-15T10:30:00", size: "245 KB", notes: "Final after review corrections" },
+  { id: "v3", documentId: "d5", version: 1, uploadedBy: "u3", uploadedAt: "2025-01-16T09:00:00", size: "310 KB" },
+  { id: "v4", documentId: "d5", version: 2, uploadedBy: "u3", uploadedAt: "2025-01-17T16:45:00", size: "325 KB", notes: "Updated challan details" },
+  { id: "v5", documentId: "d5", version: 3, uploadedBy: "u3", uploadedAt: "2025-01-19T09:15:00", size: "340 KB", notes: "Final version" },
+  { id: "v6", documentId: "d9", version: 1, uploadedBy: "u3", uploadedAt: "2024-11-15T10:00:00", size: "2.8 MB" },
+  { id: "v7", documentId: "d9", version: 2, uploadedBy: "u3", uploadedAt: "2024-11-28T14:00:00", size: "3.0 MB", notes: "Added debtors confirmation" },
+  { id: "v8", documentId: "d9", version: 3, uploadedBy: "u3", uploadedAt: "2024-12-10T11:00:00", size: "3.3 MB", notes: "Updated for management queries" },
+  { id: "v9", documentId: "d9", version: 4, uploadedBy: "u1", uploadedAt: "2024-12-20T13:00:00", size: "3.5 MB", notes: "Final reviewed version" },
+  { id: "v10", documentId: "d12", version: 1, uploadedBy: "u3", uploadedAt: "2024-07-25T10:00:00", size: "850 KB" },
+  { id: "v11", documentId: "d12", version: 2, uploadedBy: "u3", uploadedAt: "2024-07-28T11:00:00", size: "890 KB", notes: "Corrected 80C deductions" },
 ];
 
 export const mockActivityLog: ActivityLogEntry[] = [
-  { id: "a1", taskId: "t1", userId: "u2", action: "Uploaded GSTR-3B_Dec2024.pdf", timestamp: "2025-01-15T10:30:00" },
-  { id: "a2", taskId: "t1", userId: "u2", action: "Status changed to Filed", timestamp: "2025-01-15T10:35:00" },
-  { id: "a3", taskId: "t1", userId: "u2", action: "Uploaded Sales_Register_Dec.xlsx", timestamp: "2025-01-14T14:20:00" },
-  { id: "a4", taskId: "t1", userId: "u1", action: "Task created", timestamp: "2025-01-01T09:00:00" },
-  { id: "a5", taskId: "t2", userId: "u3", action: "Uploaded Form_26Q_Draft.pdf", timestamp: "2025-01-18T09:15:00" },
-  { id: "a6", taskId: "t2", userId: "u3", action: "Status changed to In Progress", timestamp: "2025-01-17T17:00:00" },
-  { id: "a7", taskId: "t2", userId: "u3", action: "Uploaded TDS_Challan_Q3.pdf", timestamp: "2025-01-17T16:45:00" },
-  { id: "a8", taskId: "t2", userId: "u1", action: "Assigned to Rahul Gupta", timestamp: "2025-01-10T10:00:00" },
-  { id: "a9", taskId: "t2", userId: "u1", action: "Task created", timestamp: "2025-01-10T09:30:00" },
-  { id: "a10", taskId: "t5", userId: "u3", action: "Uploaded AOC-4_Draft.pdf", timestamp: "2024-11-25T13:00:00" },
-  { id: "a11", taskId: "t5", userId: "u1", action: "Status changed to Overdue", timestamp: "2024-12-01T00:00:00" },
-  { id: "a12", taskId: "t5", userId: "u1", action: "Task created", timestamp: "2024-10-01T09:00:00" },
-  { id: "a13", taskId: "t6", userId: "u3", action: "Status changed to Filed", timestamp: "2024-07-28T11:30:00" },
-  { id: "a14", taskId: "t6", userId: "u3", action: "Uploaded ITR-1_AY2425_Ramesh.pdf", timestamp: "2024-07-28T11:00:00" },
-  { id: "a15", taskId: "t6", userId: "u3", action: "Uploaded Form_16_Ramesh.pdf", timestamp: "2024-07-25T10:00:00" },
-  { id: "a16", taskId: "t6", userId: "u1", action: "Task created", timestamp: "2024-06-15T09:00:00" },
-  { id: "a17", taskId: "t9", userId: "u2", action: "Uploaded GSTR-3B_Draft_Jan.pdf", timestamp: "2025-01-19T08:30:00" },
-  { id: "a18", taskId: "t9", userId: "u2", action: "Status changed to In Progress", timestamp: "2025-01-18T10:00:00" },
-  { id: "a19", taskId: "t12", userId: "u4", action: "Status changed to Filed", timestamp: "2024-09-12T14:00:00" },
-  { id: "a20", taskId: "t12", userId: "u4", action: "Uploaded Partnership_Deed_Amended.pdf", timestamp: "2024-09-10T15:30:00" },
+  { id: "a1", documentId: "d1", userId: "u2", action: "Uploaded document", timestamp: "2025-01-14T14:20:00" },
+  { id: "a2", documentId: "d1", userId: "u2", action: "Updated to version 2", timestamp: "2025-01-15T10:30:00" },
+  { id: "a3", documentId: "d1", userId: "u1", action: "Marked as reviewed", timestamp: "2025-01-15T11:00:00" },
+  { id: "a4", documentId: "d5", userId: "u3", action: "Uploaded document", timestamp: "2025-01-16T09:00:00" },
+  { id: "a5", documentId: "d5", userId: "u3", action: "Updated to version 2", timestamp: "2025-01-17T16:45:00" },
+  { id: "a6", documentId: "d5", userId: "u3", action: "Updated to version 3", timestamp: "2025-01-19T09:15:00" },
+  { id: "a7", documentId: "d5", userId: "u1", action: "Marked as reviewed", timestamp: "2025-01-19T10:00:00" },
+  { id: "a8", documentId: "d9", userId: "u3", action: "Uploaded document", timestamp: "2024-11-15T10:00:00" },
+  { id: "a9", documentId: "d9", userId: "u3", action: "Updated to version 2", timestamp: "2024-11-28T14:00:00" },
+  { id: "a10", documentId: "d9", userId: "u3", action: "Updated to version 3", timestamp: "2024-12-10T11:00:00" },
+  { id: "a11", documentId: "d9", userId: "u1", action: "Reviewed and finalized", timestamp: "2024-12-20T13:00:00" },
+  { id: "a12", documentId: "d12", userId: "u3", action: "Uploaded document", timestamp: "2024-07-25T10:00:00" },
+  { id: "a13", documentId: "d12", userId: "u3", action: "Updated to version 2", timestamp: "2024-07-28T11:00:00" },
+  { id: "a14", documentId: "d12", userId: "u1", action: "Marked as reviewed", timestamp: "2024-07-28T12:00:00" },
+  { id: "a15", documentId: "d11", userId: "u2", action: "Uploaded document", timestamp: "2024-10-05T09:00:00" },
+  { id: "a16", documentId: "d11", userId: "u2", action: "Updated reply draft", timestamp: "2024-10-08T14:00:00" },
+  { id: "a17", documentId: "d11", userId: "u1", action: "Marked as reviewed", timestamp: "2024-10-08T15:00:00" },
+  { id: "a18", documentId: "d16", userId: "u2", action: "Uploaded document", timestamp: "2025-01-19T08:30:00" },
+  { id: "a19", documentId: "d19", userId: "u4", action: "Uploaded document", timestamp: "2024-09-10T15:30:00" },
+  { id: "a20", documentId: "d19", userId: "u4", action: "Updated to version 2", timestamp: "2024-09-12T14:00:00" },
+  { id: "a21", documentId: "d19", userId: "u1", action: "Marked as reviewed", timestamp: "2024-09-12T15:00:00" },
 ];
 
-// Helper to get user name by id
+// Helpers
 export function getUserName(userId: string): string {
   return mockUsers.find(u => u.id === userId)?.name ?? "Unknown";
 }
 
-// Helper to get client name by id
 export function getClientName(clientId: string): string {
   return mockClients.find(c => c.id === clientId)?.name ?? "Unknown";
 }
 
-// Helper to get FY label
 export function getFYLabel(fyId: string): string {
   return mockFinancialYears.find(fy => fy.id === fyId)?.label ?? "Unknown";
 }
 
-// Helper to get last activity for a task
-export function getLastActivity(taskId: string): { userName: string; action: string; timestamp: string } | null {
-  const entries = mockActivityLog
-    .filter((e) => e.taskId === taskId)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  if (entries.length === 0) return null;
-  const entry = entries[0];
-  return { userName: getUserName(entry.userId), action: entry.action, timestamp: entry.timestamp };
+export function getDocumentsForSection(clientId: string, fyId: string, section: SectionType): Document[] {
+  return mockDocuments.filter(d => d.clientId === clientId && d.financialYearId === fyId && d.section === section);
+}
+
+export function getSectionCounts(clientId: string, fyId: string): Record<SectionType, number> {
+  const docs = mockDocuments.filter(d => d.clientId === clientId && d.financialYearId === fyId);
+  return {
+    GST: docs.filter(d => d.section === "GST").length,
+    TDS: docs.filter(d => d.section === "TDS").length,
+    "Income Tax": docs.filter(d => d.section === "Income Tax").length,
+    Audit: docs.filter(d => d.section === "Audit").length,
+    Notices: docs.filter(d => d.section === "Notices").length,
+    Other: docs.filter(d => d.section === "Other").length,
+  };
 }
