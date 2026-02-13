@@ -37,7 +37,7 @@ export default function Login() {
           <div className="w-12 h-12 rounded-xl bg-primary mx-auto flex items-center justify-center mb-4">
             <Building2 className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold">WorkpaperDesk</h1>
+          <h1 className="text-xl font-semibold">ComplianceDesk</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isSignup ? "Create your firm account" : "Sign in to your workspace"}
           </p>
