@@ -62,14 +62,10 @@ export default {
           muted: "hsl(var(--sidebar-muted))",
         },
         status: {
-          filed: "hsl(var(--status-filed))",
-          "filed-bg": "hsl(var(--status-filed-bg))",
-          pending: "hsl(var(--status-pending))",
-          "pending-bg": "hsl(var(--status-pending-bg))",
-          "in-progress": "hsl(var(--status-in-progress))",
-          "in-progress-bg": "hsl(var(--status-in-progress-bg))",
-          overdue: "hsl(var(--status-overdue))",
-          "overdue-bg": "hsl(var(--status-overdue-bg))",
+          completed: "hsl(var(--status-completed))",
+          "completed-bg": "hsl(var(--status-completed-bg))",
+          reviewed: "hsl(var(--status-reviewed))",
+          "reviewed-bg": "hsl(var(--status-reviewed-bg))",
         },
       },
       borderRadius: {

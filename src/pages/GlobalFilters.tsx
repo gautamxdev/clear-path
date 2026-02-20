@@ -1,143 +1,124 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { mockTasks, mockFinancialYears, mockUsers, getClientName, getUserName, getLastActivity } from "@/lib/mock-data";
+import { mockComplianceItems, mockFinancialYears, getUserName, getClientName, getLastActivity, getSectionName, PREDEFINED_SECTIONS, mockSections } from "@/lib/mock-data";
 import { StatusBadge } from "@/components/StatusBadge";
+import type { ComplianceItemStatus } from "@/lib/types";
+import { formatDistanceToNow } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
-import { cn } from "@/lib/utils";
-import type { TaskStatus } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 const ALL = "__all__";
 
 export default function GlobalFilters() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? ALL);
+  const [fyFilter, setFyFilter] = useState(ALL);
+  const [sectionFilter, setSectionFilter] = useState(ALL);
 
-  const initialStatus = searchParams.get("status") ?? ALL;
-
-  const [statusFilter, setStatusFilter] = useState(initialStatus);
-  const [employeeFilter, setEmployeeFilter] = useState(ALL);
-  const [fyFilter, setFyFilter] = useState("fy-2024");
-
-  const filtered = mockTasks.filter((t) => {
-    if (statusFilter !== ALL && t.status !== statusFilter) return false;
-    if (employeeFilter !== ALL && t.assignedTo !== employeeFilter) return false;
-    if (t.financialYearId !== fyFilter) return false;
+  const filtered = mockComplianceItems.filter((item) => {
+    if (statusFilter !== ALL && item.status !== statusFilter) return false;
+    if (fyFilter !== ALL && item.financialYearId !== fyFilter) return false;
+    if (sectionFilter !== ALL) {
+      const section = mockSections.find((s) => s.id === item.sectionId);
+      if (!section || section.name !== sectionFilter) return false;
+    }
     return true;
   });
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-6 py-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-lg font-semibold">Global Filters</h1>
-        </div>
+      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-6 py-3 flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <h1 className="text-lg font-semibold">Global Filters</h1>
       </header>
 
-      <div className="p-6 max-w-6xl mx-auto space-y-5">
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Select value={fyFilter} onValueChange={setFyFilter}>
-            <SelectTrigger className="w-[160px] h-9 text-sm bg-card">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {mockFinancialYears.map((fy) => (
-                <SelectItem key={fy.id} value={fy.id}>{fy.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-9 text-sm bg-card">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All Statuses</SelectItem>
-              {(["Filed", "Pending", "In Progress", "Overdue"] as TaskStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-            <SelectTrigger className="w-[180px] h-9 text-sm bg-card">
-              <SelectValue placeholder="All Employees" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All Employees</SelectItem>
-              {mockUsers.filter(u => u.role === "staff").map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <span className="text-xs text-muted-foreground ml-auto">{filtered.length} tasks found</span>
+      <div className="p-6 space-y-5">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Financial Year</label>
+            <Select value={fyFilter} onValueChange={setFyFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All Years</SelectItem>
+                {mockFinancialYears.map((fy) => (
+                  <SelectItem key={fy.id} value={fy.id}>{fy.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Status</label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All</SelectItem>
+                {(["Completed", "Reviewed"] as ComplianceItemStatus[]).map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Section</label>
+            <Select value={sectionFilter} onValueChange={setSectionFilter}>
+              <SelectTrigger className="w-[160px] h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>All Sections</SelectItem>
+                {PREDEFINED_SECTIONS.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <span className="text-xs text-muted-foreground ml-auto">{filtered.length} items found</span>
         </div>
 
-        {/* Results Table */}
-        <div className="border rounded-lg bg-card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-secondary/50">
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Task</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Client</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Status</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Assigned To</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Due Date</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Last Activity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((task) => {
-                const lastActivity = getLastActivity(task.id);
-                const isOverdue = task.status === "Overdue";
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Section</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Prepared By</TableHead>
+              <TableHead>Reviewed By</TableHead>
+              <TableHead>Last Activity</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">No matching items.</TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((item) => {
+                const lastActivity = getLastActivity(item.id);
                 return (
-                  <tr
-                    key={task.id}
-                    onClick={() => navigate(`/task/${task.id}`)}
-                    className={cn(
-                      "border-b last:border-b-0 cursor-pointer transition-colors",
-                      isOverdue ? "bg-status-overdue-bg/50 hover:bg-status-overdue-bg/80" : "hover:bg-secondary/30"
-                    )}
-                  >
-                    <td className={cn("px-4 py-2.5 font-medium", isOverdue && "text-status-overdue")}>{task.name}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{getClientName(task.clientId)}</td>
-                    <td className="px-4 py-2.5"><StatusBadge status={task.status} /></td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{getUserName(task.assignedTo)}</td>
-                    <td className={cn("px-4 py-2.5 text-muted-foreground", isOverdue && "text-status-overdue font-medium")}>
-                      {format(new Date(task.dueDate), "dd MMM yyyy")}
-                    </td>
-                    <td className="px-4 py-2.5 text-muted-foreground">
+                  <TableRow key={item.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/item/${item.id}`)}>
+                    <TableCell className="font-medium">{item.title}</TableCell>
+                    <TableCell className="text-muted-foreground">{getClientName(item.clientId)}</TableCell>
+                    <TableCell className="text-muted-foreground">{getSectionName(item.sectionId)}</TableCell>
+                    <TableCell><StatusBadge status={item.status} /></TableCell>
+                    <TableCell className="text-muted-foreground">{item.preparedBy ? getUserName(item.preparedBy) : "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.reviewedBy ? getUserName(item.reviewedBy) : "—"}</TableCell>
+                    <TableCell>
                       {lastActivity ? (
-                        <span className="text-xs">
-                          {lastActivity.userName} · {lastActivity.action}
-                          <span className="text-muted-foreground/60 ml-1">
-                            {formatDistanceToNow(new Date(lastActivity.timestamp), { addSuffix: true })}
-                          </span>
+                        <span className="text-xs text-muted-foreground">
+                          {lastActivity.userName} · {formatDistanceToNow(new Date(lastActivity.timestamp), { addSuffix: true })}
                         </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground/50">—</span>
-                      )}
-                    </td>
-                  </tr>
+                      ) : "—"}
+                    </TableCell>
+                  </TableRow>
                 );
-              })}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                    No tasks match your filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              })
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

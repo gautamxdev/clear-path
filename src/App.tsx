@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import FirmSetup from "./pages/FirmSetup";
 import Dashboard from "./pages/Dashboard";
-import TaskDetail from "./pages/TaskDetail";
+import ComplianceItemDetail from "./pages/ComplianceItemDetail";
 import GlobalFilters from "./pages/GlobalFilters";
 import NotFound from "./pages/NotFound";
 
@@ -24,7 +24,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<FirmSetup />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/task/:taskId" element={<TaskDetail />} />
+          <Route path="/item/:itemId" element={<ComplianceItemDetail />} />
           <Route path="/filters" element={<GlobalFilters />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

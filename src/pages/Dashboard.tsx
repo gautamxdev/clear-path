@@ -1,30 +1,26 @@
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FYSelector } from "@/components/FYSelector";
-import { ClientTaskTable } from "@/components/ClientTaskTable";
-import { mockClients, mockTasks } from "@/lib/mock-data";
+import { SectionTree } from "@/components/SectionTree";
+import { ComplianceItemTable } from "@/components/ComplianceItemTable";
+import { mockClients, getItemsForSection, getSectionName } from "@/lib/mock-data";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const [selectedClientId, setSelectedClientId] = useState<string>(mockClients[0].id);
   const [selectedFY, setSelectedFY] = useState("fy-2024");
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
   const selectedClient = mockClients.find((c) => c.id === selectedClientId);
-  const filteredTasks = mockTasks.filter(
-    (t) => t.clientId === selectedClientId && t.financialYearId === selectedFY
-  );
+  const items = selectedSectionId ? getItemsForSection(selectedSectionId) : [];
 
-  // Summary counts
-  const allClientTasks = mockTasks.filter((t) => t.financialYearId === selectedFY);
-  const pendingCount = allClientTasks.filter((t) => t.status === "Pending").length;
-  const overdueCount = allClientTasks.filter((t) => t.status === "Overdue").length;
-  const inProgressCount = allClientTasks.filter((t) => t.status === "In Progress").length;
-  const filedCount = allClientTasks.filter((t) => t.status === "Filed").length;
+  const completedCount = items.filter((i) => i.status === "Completed").length;
+  const reviewedCount = items.filter((i) => i.status === "Reviewed").length;
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar selectedClientId={selectedClientId} onSelectClient={setSelectedClientId} />
+      <AppSidebar selectedClientId={selectedClientId} onSelectClient={(id) => { setSelectedClientId(id); setSelectedSectionId(null); }} />
 
       <main className="flex-1 overflow-auto">
         {/* Top Bar */}
@@ -37,27 +33,46 @@ export default function Dashboard() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <FYSelector value={selectedFY} onChange={setSelectedFY} />
-            <Button size="sm" className="gap-1.5">
-              <Plus className="w-3.5 h-3.5" />
-              Add Task
-            </Button>
-          </div>
         </header>
 
-        <div className="p-6 space-y-5">
-          {/* Subtle inline summary */}
-          <div className="flex items-center gap-6 text-xs text-muted-foreground">
-            <span>Pending <strong className="text-status-pending ml-1">{pendingCount}</strong></span>
-            <span>In Progress <strong className="text-status-in-progress ml-1">{inProgressCount}</strong></span>
-            <span>Overdue <strong className="text-status-overdue ml-1">{overdueCount}</strong></span>
-            <span>Filed <strong className="text-status-filed ml-1">{filedCount}</strong></span>
-            <span className="ml-auto text-muted-foreground/70">{filteredTasks.length} tasks for this client</span>
-          </div>
+        <div className="flex">
+          {/* Left column – FY + Section Tree */}
+          <aside className="w-[240px] flex-shrink-0 border-r p-4 space-y-4">
+            <FYSelector value={selectedFY} onChange={(fy) => { setSelectedFY(fy); setSelectedSectionId(null); }} />
+            <SectionTree
+              clientId={selectedClientId}
+              financialYearId={selectedFY}
+              selectedSectionId={selectedSectionId}
+              onSelectSection={setSelectedSectionId}
+            />
+          </aside>
 
-          {/* Task Table */}
-          <ClientTaskTable tasks={filteredTasks} />
+          {/* Right column – Items table */}
+          <div className="flex-1 p-6">
+            {selectedSectionId ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-base font-medium">{getSectionName(selectedSectionId)}</h3>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>Completed <strong className="text-status-completed ml-1">{completedCount}</strong></span>
+                      <span>Reviewed <strong className="text-status-reviewed ml-1">{reviewedCount}</strong></span>
+                      <span className="opacity-60">{items.length} items</span>
+                    </div>
+                  </div>
+                  <Button size="sm" className="gap-1.5">
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Item
+                  </Button>
+                </div>
+                <ComplianceItemTable items={items} />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+                Select a section from the left to view compliance items.
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
