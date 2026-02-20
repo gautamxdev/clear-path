@@ -1,15 +1,15 @@
-import { mockActivityLog, getUserName } from "@/lib/mock-data";
+import { mockActivityLog, getUserName, formatAction } from "@/lib/mock-data";
 import { format } from "date-fns";
 import { Clock } from "lucide-react";
 
 interface ActivityLogProps {
-  taskId: string;
+  complianceItemId: string;
 }
 
-export function ActivityLog({ taskId }: ActivityLogProps) {
+export function ActivityLog({ complianceItemId }: ActivityLogProps) {
   const entries = mockActivityLog
-    .filter((e) => e.taskId === taskId)
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .filter((e) => e.complianceItemId === complianceItemId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (entries.length === 0) {
     return <p className="text-sm text-muted-foreground py-4">No activity yet.</p>;
@@ -19,7 +19,6 @@ export function ActivityLog({ taskId }: ActivityLogProps) {
     <div className="space-y-0">
       {entries.map((entry, i) => (
         <div key={entry.id} className="flex gap-3 py-3 relative">
-          {/* Timeline line */}
           {i < entries.length - 1 && (
             <div className="absolute left-[11px] top-[30px] bottom-0 w-px bg-border" />
           )}
@@ -30,11 +29,11 @@ export function ActivityLog({ taskId }: ActivityLogProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm">
-              <span className="font-medium">{getUserName(entry.userId)}</span>{" "}
-              <span className="text-muted-foreground">{entry.action}</span>
+              <span className="font-medium">{getUserName(entry.performedBy)}</span>{" "}
+              <span className="text-muted-foreground">{formatAction(entry)}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {format(new Date(entry.timestamp), "dd MMM yyyy, hh:mm a")}
+              {format(new Date(entry.createdAt), "dd MMM yyyy, hh:mm a")}
             </p>
           </div>
         </div>

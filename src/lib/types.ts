@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "staff";
 
-export type TaskStatus = "Filed" | "Pending" | "In Progress" | "Overdue";
+export type ComplianceItemStatus = "Completed" | "Reviewed";
 
 export interface User {
   id: string;
@@ -25,35 +25,47 @@ export interface Client {
 
 export interface FinancialYear {
   id: string;
-  label: string; // e.g. "FY 2024-25"
+  label: string;
   startDate: string;
   endDate: string;
 }
 
-export interface ComplianceTask {
+export interface Section {
   id: string;
   clientId: string;
   financialYearId: string;
   name: string;
-  status: TaskStatus;
-  assignedTo: string; // userId
-  dueDate: string;
-  description?: string;
 }
 
-export interface Document {
+export interface ComplianceItem {
   id: string;
-  taskId: string;
+  sectionId: string;
+  clientId: string;
+  financialYearId: string;
+  title: string;
+  status: ComplianceItemStatus;
+  preparedBy: string | null;
+  preparedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface WorkDocument {
+  id: string;
+  complianceItemId: string;
   name: string;
-  uploadedBy: string; // userId
+  fileUrl: string;
+  uploadedBy: string;
   uploadedAt: string;
   size: string;
 }
 
-export interface ActivityLogEntry {
+export interface ActivityLog {
   id: string;
-  taskId: string;
-  userId: string;
-  action: string;
-  timestamp: string;
+  complianceItemId: string;
+  actionType: string;
+  metadata: Record<string, string>;
+  performedBy: string;
+  createdAt: string;
 }
