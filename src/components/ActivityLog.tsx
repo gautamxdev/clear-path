@@ -1,25 +1,53 @@
-import { mockActivityLog, getUserName, formatAction } from "@/lib/mock-data";
-import { format } from "date-fns";
-import { Clock } from "lucide-react";
+import { useActivityLogs } from "@/hooks/useActivityLogs";
+import { useProfiles } from "@/hooks/useProfiles";
+import { formatDistanceToNow } from "date-fns";
+import { Clock, Loader2 } from "lucide-react";
 
 interface ActivityLogProps {
   complianceItemId: string;
 }
 
-export function ActivityLog({ complianceItemId }: ActivityLogProps) {
-  const entries = mockActivityLog
-    .filter((e) => e.complianceItemId === complianceItemId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+function formatAction(entry: { action_type: string; metadata: any }): string {
+  const meta = entry.metadata ?? {};
+  switch (entry.action_type) {
+    case "document_uploaded":
+      return `Uploaded ${meta.fileName || "a document"}`;
+    case "status_changed":
+      return meta.from ? `Status changed from ${meta.from} to ${meta.to}` : `Status set to ${meta.status || meta.to || "unknown"}`;
+    case "prepared_by_set":
+      return `Prepared by updated`;
+    case "reviewed_by_set":
+      return `Reviewed by updated`;
+    case "item_created":
+      return `Item created: ${meta.title || ""}`;
+    default:
+      return entry.action_type.replace(/_/g, " ");
+  }
+}
 
-  if (entries.length === 0) {
+export function ActivityLog({ complianceItemId }: ActivityLogProps) {
+  const { data: logs, isLoading } = useActivityLogs(complianceItemId);
+  const { data: profiles } = useProfiles();
+
+  const getUserName = (userId: string | null) => {
+    if (!userId || !profiles) return "System";
+    const p = profiles.find((pr) => pr.id === userId);
+    return p?.full_name || p?.email || "Unknown";
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (!logs || logs.length === 0) {
     return <p className="text-sm text-muted-foreground py-4">No activity yet.</p>;
   }
 
   return (
     <div className="space-y-0">
-      {entries.map((entry, i) => (
+      {logs.map((entry, i) => (
         <div key={entry.id} className="flex gap-3 py-3 relative">
-          {i < entries.length - 1 && (
+          {i < logs.length - 1 && (
             <div className="absolute left-[11px] top-[30px] bottom-0 w-px bg-border" />
           )}
           <div className="mt-1 flex-shrink-0">
@@ -29,11 +57,11 @@ export function ActivityLog({ complianceItemId }: ActivityLogProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm">
-              <span className="font-medium">{getUserName(entry.performedBy)}</span>{" "}
+              <span className="font-medium">{getUserName(entry.performed_by)}</span>{" "}
               <span className="text-muted-foreground">{formatAction(entry)}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {format(new Date(entry.createdAt), "dd MMM yyyy, hh:mm a")}
+              {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
             </p>
           </div>
         </div>
