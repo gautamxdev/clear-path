@@ -46,9 +46,10 @@ export default function FirmSetup() {
       // Force reload to refresh auth context
       window.location.href = "/dashboard";
     } catch (error: unknown) {
+      console.error("Firm creation error:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create firm",
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       });
     } finally {
