@@ -1,219 +1,193 @@
 
 
-# Enable Lovable Cloud and Implement Backend
+# Refactor: Task Tracker to Working-Paper Documentation System
 
 ## Summary
 
-Enable Lovable Cloud (Supabase) to replace all mock data with a real PostgreSQL database, file storage, and authentication. The app will gain persistent data, real user accounts, and firm-scoped multi-tenancy.
+Transform the current compliance task tracker into a structured documentation repository. The core change is replacing the task-management model (assigned user, due dates, status workflows like Filed/Pending/In Progress/Overdue) with a working-paper model (prepared by, reviewed by, documents, activity trail). The visual theme (dark sidebar, light content, tables, badges) stays intact.
 
 ---
 
-## Phase 1: Enable Cloud and Create Database Schema
+## What Changes
 
-### Enable Lovable Cloud
-- Activate Lovable Cloud on the project to provision a Supabase instance with PostgreSQL, Auth, and Storage.
+### Data Model (src/lib/types.ts)
 
-### Database Tables (via migrations)
+Remove: `ComplianceTask`, `TaskStatus` (Filed/Pending/In Progress/Overdue), `Document` (task-linked), `ActivityLogEntry` (task-linked).
 
-**1. Firms table**
-- `id` (uuid, primary key)
-- `name` (text)
-- `created_at` (timestamptz)
+Add:
 
-**2. Profiles table**
-- `id` (uuid, primary key, references auth.users)
-- `firm_id` (uuid, references firms)
-- `full_name` (text)
-- `email` (text)
-- `created_at` (timestamptz)
+- `Section` -- predefined compliance categories (GST, Income Tax, TDS, ROC, Audit, Notices, Other)
+- `ComplianceItem` -- replaces `ComplianceTask`:
+  - `id`, `sectionId`, `clientId`, `financialYearId`, `title`
+  - `status`: enum `"Completed" | "Reviewed"` (only two states)
+  - `preparedBy` (nullable user ID), `preparedAt` (nullable timestamp)
+  - `reviewedBy` (nullable user ID), `reviewedAt` (nullable timestamp)
+  - `createdAt`
+- `WorkDocument` -- belongs to compliance item:
+  - `id`, `complianceItemId`, `name`, `fileUrl`, `uploadedBy`, `uploadedAt`, `size`
+- `ActivityLog` -- per compliance item:
+  - `id`, `complianceItemId`, `actionType`, `metadata` (JSON-like object), `performedBy`, `createdAt`
 
-**3. User Roles table** (separate from profiles for security)
-- `id` (uuid, primary key)
-- `user_id` (uuid, references auth.users, unique with role)
-- `role` (app_role enum: admin, staff)
+### Mock Data (src/lib/mock-data.ts)
 
-**4. Clients table**
-- `id` (uuid, primary key)
-- `firm_id` (uuid, references firms)
-- `name` (text)
-- `pan` (text)
-- `type` (text -- Individual, Company, LLP, etc.)
-- `created_at` (timestamptz)
+Full rewrite of mock data to match the new model:
+- Keep `mockFirm`, `mockUsers`, `mockClients`, `mockFinancialYears` (largely unchanged)
+- Define `PREDEFINED_SECTIONS` constant array: GST, Income Tax, TDS, ROC, Audit, Notices, Other
+- Generate `mockSections` for each client + FY combination
+- Replace `mockTasks` with `mockComplianceItems` using the new fields
+- Replace `mockDocuments` and `mockActivityLog` with new shape
+- Update helper functions: remove `getLastActivity(taskId)`, add `getLastActivity(complianceItemId)`, `getSectionsForClientFY()`, etc.
 
-**5. Financial Years table**
-- `id` (uuid, primary key)
-- `firm_id` (uuid, references firms)
-- `label` (text, e.g. "FY 2024-25")
-- `start_date` (date)
-- `end_date` (date)
-- `created_at` (timestamptz)
+### Status Badge (src/components/StatusBadge.tsx)
 
-**6. Sections table**
-- `id` (uuid, primary key)
-- `client_id` (uuid, references clients)
-- `financial_year_id` (uuid, references financial_years)
-- `name` (text -- GST, Income Tax, TDS, ROC, Audit, Notices, Other)
+Replace the four-status config with two states:
+- **Completed** -- blue/green badge
+- **Reviewed** -- green/success badge
 
-**7. Compliance Items table**
-- `id` (uuid, primary key)
-- `section_id` (uuid, references sections)
-- `title` (text)
-- `status` (text, default 'Completed' -- only Completed or Reviewed)
-- `prepared_by` (uuid, nullable, references auth.users)
-- `prepared_at` (timestamptz, nullable)
-- `reviewed_by` (uuid, nullable, references auth.users)
-- `reviewed_at` (timestamptz, nullable)
-- `created_at` (timestamptz)
+Remove Overdue/Pending/In Progress/Filed styling.
 
-**8. Documents table**
-- `id` (uuid, primary key)
-- `compliance_item_id` (uuid, references compliance_items)
-- `file_name` (text)
-- `file_url` (text)
-- `uploaded_by` (uuid, references auth.users)
-- `uploaded_at` (timestamptz)
-- `size` (text)
+### Routes (src/App.tsx)
 
-**9. Activity Logs table**
-- `id` (uuid, primary key)
-- `compliance_item_id` (uuid, references compliance_items)
-- `action_type` (text)
-- `metadata` (jsonb)
-- `performed_by` (uuid, references auth.users)
-- `created_at` (timestamptz)
+```
+/              -- redirect (unchanged)
+/login         -- login (unchanged)
+/setup         -- firm setup (unchanged)
+/dashboard     -- main client dashboard (refactored)
+/item/:itemId  -- compliance item detail (replaces /task/:taskId)
+/filters       -- global filters (refactored)
+```
 
----
+### Sidebar (src/components/AppSidebar.tsx)
 
-## Phase 2: Security (RLS Policies and Helper Functions)
+Keep dark sidebar, firm header, client list, sign-out. Remove "Pending Filings" and "Notices" nav items (no longer applicable to the two-status model). Keep "All Clients" and "Global Filters".
 
-### Helper Functions (security definer)
+### Dashboard Page (src/pages/Dashboard.tsx)
 
-- `get_user_firm_id(uid uuid)` -- returns the firm_id for a given auth user
-- `has_role(uid uuid, role app_role)` -- checks if user has a specific role
+Refactor the main content area to a **two-column layout** for the selected client:
 
-### RLS Policies (all tables)
+**Left column** (narrow, ~240px):
+- Financial Year selector dropdown
+- Collapsible section tree: GST, Income Tax, TDS, ROC, Audit, Notices, Other
+- Each section shows item count badge
+- Clicking a section loads items in the right column
 
-Every table gets RLS enabled. All data access is scoped to the user's firm via `get_user_firm_id(auth.uid())`. Key rules:
+**Right column**:
+- When a section is selected: table of compliance items with columns:
+  - Item Name
+  - Status (Completed / Reviewed badge)
+  - Prepared By
+  - Prepared At
+  - Reviewed By
+  - Reviewed At
+  - Last Activity
+- Clicking a row navigates to the item detail page
+- Summary bar above table shows counts (e.g., "3 Completed, 2 Reviewed")
 
-- **Read**: All firm members can read all data within their firm
-- **Insert**: All firm members can insert data within their firm
-- **Update**: All firm members can update, but staff cannot revert Reviewed items
-- **Delete**: Only admins can delete
+Remove the old single-table task view and the top summary metrics bar.
 
-### Storage Bucket
+### New Component: SectionTree (src/components/SectionTree.tsx)
 
-- Create a private `compliance-docs` bucket for document uploads
-- RLS policies on the bucket scoped to firm membership
+A collapsible list of predefined sections for the selected client + FY. Uses Radix Collapsible or simple accordion-style UI. Highlights the active section. Shows count of items per section.
 
----
+### New Component: ComplianceItemTable (src/components/ComplianceItemTable.tsx)
 
-## Phase 3: Auth Integration
+Replaces `ClientTaskTable`. Columns:
+- Item Name (clickable)
+- Status badge (Completed / Reviewed)
+- Prepared By (user name or "--")
+- Prepared At (formatted date or "--")
+- Reviewed By (user name or "--")
+- Reviewed At (formatted date or "--")
+- Last Activity (user + action + relative time)
 
-### Replace Mock Auth
+No overdue row highlighting (concept removed).
 
-- Replace `localStorage`-based auth with Supabase Auth (email + password)
-- Update `Login.tsx` to use `supabase.auth.signInWithPassword()` and `supabase.auth.signUp()`
-- Update `FirmSetup.tsx` to create a firm record and assign admin role on signup
-- Create a trigger to auto-create a profile row when a user signs up
-- Add an `AuthProvider` context that wraps the app and provides current user/firm data
-- Update `Index.tsx` to check Supabase session instead of localStorage
-- Update sidebar sign-out to use `supabase.auth.signOut()`
+### Item Detail Page (src/pages/ComplianceItemDetail.tsx)
 
----
+Replaces `TaskDetail.tsx`. Layout:
 
-## Phase 4: Replace Mock Data with Real Queries
+**Header:**
+- Back button
+- Item name + section name breadcrumb
+- Status dropdown (Completed / Reviewed)
 
-### Create a Supabase Client
+**Detail cards row:**
+- Client name
+- Financial Year
+- Status
+- Prepared By (selector dropdown)
+- Reviewed By (selector dropdown, only enabled when status = Reviewed)
 
-- Generate `src/integrations/supabase/client.ts` and types
+**Documents section:**
+- List of uploaded documents (name, uploaded by, uploaded at)
+- Upload button (mock)
 
-### Custom React Hooks (using TanStack Query)
+**Activity Timeline section:**
+- Chronological entries showing user name, action, timestamp
+- Reuse the existing `ActivityLog` component pattern but with new data shape
 
-Create hooks in `src/hooks/` to replace all mock data imports:
+### Activity Log Component (src/components/ActivityLog.tsx)
 
-- `useClients()` -- fetch clients for the user's firm
-- `useFinancialYears(firmId)` -- fetch FYs for a firm
-- `useSections(clientId, fyId)` -- fetch sections for a client+FY
-- `useComplianceItems(sectionId)` -- fetch items for a section
-- `useComplianceItem(itemId)` -- fetch single item with documents and activity
-- `useDocuments(itemId)` -- fetch documents for an item
-- `useActivityLogs(itemId)` -- fetch activity logs for an item
-- `useProfiles(firmId)` -- fetch all team members in the firm
+Update to accept `complianceItemId` instead of `taskId`. Same timeline visual. Action types: "Document uploaded", "Status changed to Completed", "Prepared by set to [name]", "Reviewed by set to [name]".
 
-### Mutation Hooks
+### Global Filters Page (src/pages/GlobalFilters.tsx)
 
-- `useCreateComplianceItem()` -- insert item + activity log
-- `useUpdateComplianceItem()` -- update status/prepared_by/reviewed_by + activity log
-- `useUploadDocument()` -- upload to storage + insert document record + activity log
-- `useCreateFinancialYear()` -- insert FY + auto-generate 7 sections for all clients
+Refactor filters:
+- Remove "Assigned To" filter (no assignment concept)
+- Keep Financial Year filter
+- Replace status options with: Completed, Reviewed
+- Add Section filter (GST, Income Tax, etc.)
+- Table columns match the new compliance item model
 
-### Update Components
+### Files to Delete
 
-| Component | Change |
-|---|---|
-| `AppSidebar` | Replace `mockClients` with `useClients()` |
-| `SectionTree` | Replace `getSectionsForClientFY()` with `useSections()` |
-| `ComplianceItemTable` | Replace `getItemsForSection()` with `useComplianceItems()` |
-| `ComplianceItemDetail` | Replace mock lookups with `useComplianceItem()` |
-| `ActivityLog` | Replace `mockActivityLog` with `useActivityLogs()` |
-| `Dashboard` | Wire up real data hooks, add loading states |
-| `GlobalFilters` | Replace mock filtering with database queries |
-| `FYSelector` | Replace `mockFinancialYears` with `useFinancialYears()` |
+- `src/components/ClientTaskTable.tsx` -- replaced by `ComplianceItemTable`
+- `src/pages/TaskDetail.tsx` -- replaced by `ComplianceItemDetail`
 
----
+### Files Unchanged
 
-## Phase 5: Edge Function for Section Auto-Generation
-
-Create an edge function `auto-generate-sections` that:
-- Triggers when a new Financial Year is created
-- For each client in the firm, creates 7 sections (GST, Income Tax, TDS, ROC, Audit, Notices, Other)
-- This can alternatively be done via a database trigger/function
-
----
-
-## What Does NOT Change
-
-- Visual theme (dark sidebar, light content, calm styling)
-- Component structure and layout patterns
-- Status badge design (Completed / Reviewed)
-- Table-driven UI approach
-- Route structure (`/dashboard`, `/item/:itemId`, `/filters`)
+- `src/index.css` -- theme preserved
+- `tailwind.config.ts` -- status color variables updated (remove overdue/pending/in-progress, keep two status colors)
+- `src/pages/Login.tsx` -- unchanged
+- `src/pages/FirmSetup.tsx` -- unchanged
+- `src/components/ui/*` -- all UI primitives unchanged
 
 ---
 
 ## Technical Details
 
+### Status Color Updates (tailwind.config.ts + index.css)
+
+Replace the four status color pairs with two:
+- `--status-completed`: blue tone (215 70% 52%) with light bg
+- `--status-reviewed`: green tone (152 55% 42%) with light bg
+
+Remove `--status-pending`, `--status-overdue`, `--status-in-progress`, `--status-filed` and their bg variants.
+
+### State Management in Dashboard
+
+The Dashboard component manages:
+- `selectedClientId` (from sidebar)
+- `selectedFY` (from FY selector in left column)
+- `selectedSectionId` (from section tree, nullable)
+- `selectedItemId` (null on dashboard; detail is a separate route)
+
+### Financial Year Creation
+
+Add an "Add FY" button visible only to admin users in the FY selector area of the client view. When clicked, opens a simple dialog to input FY label and date range. Creating a new FY auto-generates the 7 predefined sections for every client (in mock data, this is simulated with state).
+
 ### Implementation Order
 
-1. Enable Lovable Cloud
-2. Create migration: enum types, all tables, indexes
-3. Create migration: helper functions (`get_user_firm_id`, `has_role`)
-4. Create migration: RLS policies for all tables
-5. Create migration: storage bucket + storage policies
-6. Create migration: trigger for auto-creating profile on signup
-7. Create Supabase client and generated types
-8. Create `AuthProvider` context component
-9. Update `Login.tsx` and `FirmSetup.tsx` for real auth
-10. Create all data hooks (`useClients`, `useSections`, etc.)
-11. Create all mutation hooks
-12. Update each component to use real data hooks
-13. Remove `src/lib/mock-data.ts` (no longer needed)
-14. Seed initial test data if needed
-
-### Database Trigger for Profile Creation
-
-```text
-On auth.users INSERT:
-  -> Create profiles row with user id, email, full_name from metadata
-```
-
-### Section Auto-Generation
-
-```text
-On financial_years INSERT:
-  -> For each client in firm:
-    -> Insert 7 sections (GST, Income Tax, TDS, ROC, Audit, Notices, Other)
-```
-
-This can be a PostgreSQL function called via trigger or an edge function.
-
+1. Update `types.ts` with new interfaces
+2. Rewrite `mock-data.ts` with new data shape and helpers
+3. Update `StatusBadge.tsx` for two statuses
+4. Update `index.css` and `tailwind.config.ts` for new status colors
+5. Create `SectionTree.tsx` component
+6. Create `ComplianceItemTable.tsx` component
+7. Refactor `Dashboard.tsx` with two-column layout
+8. Create `ComplianceItemDetail.tsx` page
+9. Update `ActivityLog.tsx` for new data shape
+10. Refactor `GlobalFilters.tsx`
+11. Update `AppSidebar.tsx` (remove task-specific nav)
+12. Update `App.tsx` routes
+13. Delete old `ClientTaskTable.tsx` and `TaskDetail.tsx`

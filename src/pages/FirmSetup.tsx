@@ -1,61 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2 } from "lucide-react";
+import { Building2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
 
 export default function FirmSetup() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [firmName, setFirmName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [emails, setEmails] = useState<string[]>([""]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const addEmail = () => setEmails([...emails, ""]);
+  const removeEmail = (i: number) => setEmails(emails.filter((_, idx) => idx !== i));
+  const updateEmail = (i: number, val: string) => {
+    const updated = [...emails];
+    updated[i] = val;
+    setEmails(updated);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || loading) return;
-    setLoading(true);
-
-    try {
-      // Generate firm ID client-side to avoid needing SELECT on insert
-      const firmId = crypto.randomUUID();
-
-      // Create firm
-      const { error: firmError } = await supabase
-        .from("firms")
-        .insert({ id: firmId, name: firmName });
-      if (firmError) throw firmError;
-
-      // Link profile to firm
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ firm_id: firmId })
-        .eq("id", user.id);
-      if (profileError) throw profileError;
-
-      // Assign admin role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({ user_id: user.id, role: "admin" });
-      if (roleError) throw roleError;
-
-      toast({ title: "Firm created!", description: `${firmName} is ready.` });
-      // Force reload to refresh auth context
-      window.location.href = "/dashboard";
-    } catch (error: unknown) {
-      console.error("Firm creation error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    navigate("/");
   };
 
   return (
@@ -67,7 +32,7 @@ export default function FirmSetup() {
           </div>
           <h1 className="text-xl font-semibold">Set Up Your Firm</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Create your firm to get started
+            Add your firm details and invite your team
           </p>
         </div>
 
@@ -83,9 +48,38 @@ export default function FirmSetup() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating..." : "Create Firm"}
-          </Button>
+          <div className="space-y-3">
+            <Label>Invite Employees</Label>
+            <p className="text-xs text-muted-foreground">They'll receive an email to set up their login.</p>
+            {emails.map((email, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="employee@yourfirm.com"
+                  value={email}
+                  onChange={(e) => updateEmail(i, e.target.value)}
+                />
+                {emails.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={addEmail} className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" />
+              Add Another
+            </Button>
+          </div>
+
+          <div className="flex gap-3">
+            <Button type="submit" className="flex-1">
+              Complete Setup
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => navigate("/")}>
+              Skip for now
+            </Button>
+          </div>
         </form>
       </div>
     </div>
