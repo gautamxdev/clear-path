@@ -21,18 +21,19 @@ export default function FirmSetup() {
     setLoading(true);
 
     try {
+      // Generate firm ID client-side to avoid needing SELECT on insert
+      const firmId = crypto.randomUUID();
+
       // Create firm
-      const { data: firm, error: firmError } = await supabase
+      const { error: firmError } = await supabase
         .from("firms")
-        .insert({ name: firmName })
-        .select()
-        .single();
+        .insert({ id: firmId, name: firmName });
       if (firmError) throw firmError;
 
       // Link profile to firm
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ firm_id: firm.id })
+        .update({ firm_id: firmId })
         .eq("id", user.id);
       if (profileError) throw profileError;
 
